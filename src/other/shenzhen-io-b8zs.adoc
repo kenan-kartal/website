@@ -1,0 +1,160 @@
+= Shenzhen I/O - B8ZS
+
+After my previous link:shenzhen-io-endless-runner.html[post]
+about building a toy endless runner in Shenzhen I/O, now I have built a custom puzzle.
+In this puzzle player needs to implement a bipolar with eight zero substitution scrambler.
+This puzzle can be downloaded from link:https://steamcommunity.com/sharedfiles/filedetails/?id=2980920490[Steam Workshop].
+
+== Working Principle
+
+Bipolar with eight zeros substitution scrambler processes the input signal and repeats it as output.
+Only when the input signal has eight consecutive zeros the output is replaced with a different signal.
+The reason is that two nodes in a network need to be in sync and the bipolar encoding sends a flat signal for consecutive zeros.
+So, even if there is a small offset accumulating at each step, for large amounts of data of zeros it will be eventually go out of sync.
+This scrambler prevents that because network nodes can synchronize themselves whenever they see a rising edge.
+
+Not only that we have to replace the flat signal, we also have to keep the representation of data.
+After all, what is the point of synchronization if the data transmitted is wrong?
+This can be achieved by making use of violations.
+In bipolar AMI, every next non-zero voltage needs to be in the opposite side of the signal.
+If one is positive, next should be negative.
+If the next non-zero voltage is on the same side, then it is a violation.
+We can interpret those violations as zeros.
+
+Whenever we encounter eight consecutive zeros, we can replace it with the sequence “000VB0VB”.
+V stands for violation, meaning the opposite of the previous non-zero voltage.
+B stands for bipolar, meaning the same voltage as the previous non-zero voltage.
+When the receiver gets a violation, that V and the consecutive B is discarded as zeros.
+
+== Puzzle
+
+We can create custom puzzles in Shenzhen I/O with a Lua script.
+The file and default implementation can be created in the game and then we can edit it outside.
+After a restart, the game will compile the script.
+
+The writing of the script was trivial.
+Although I had to edit it several times because of parsing and some operator errors (Lua does not have += operator, apparently).
+After that all was left to implement the solution in the game.
+
+It took me a good amount of time to solve it.
+Limited memory and registers in these chips are very restricted so I have added more items.
+Then I needed more space for those items and went back to script to get that.
+During that I have added redundancies that should be eliminated, but getting it working is more important.
+
+Finally I have solved it and uploaded the puzzle to Steam Workshop.
+The very next day someone else has solved it with at least twice the efficiency of my solution.
+His solution is very efficient and does not contain redundancies like mine, kudos to him!
+
+== Solution
+
+I have solved this problem with the cost of 27 yuen, 3122 power and 61 lines of code.
+The code is below.
+
+First I save the incoming data to memory and check the previous eight values to see whether they are all zeros or not.
+Then notifies the next module whether it should perform substitution or not.
+
+.Input Store
+[source]
+----
+@ mov 7 x1
+mov p0 x2
+mov x1 dat
+zeros: teq x0 50
+- mov 1 x3
+- jmp end
+add 1
+teq acc 8
+- jmp zeros
+mov -1 x3
+end: mov dat x1
+mov 0 acc
+slp 1
+----
+
+This next module gets the substitution requirement from the previous chip and forwards either this information or the next data that is yet to be transmitted.
+Also it continues to forward the memory pointer so that after substitution, so the module will continue to transmit data correctly.
+
+.Substitution Forward
+[source]
+----
+mov x1 dat
+teq acc 7
+- add 1
+- mov x0 dat
+- jmp end
+tlt dat 0
++ mov 0 acc
++ mov x0 dat
++ mov 2 x3
+- mov x0 x3
+end: slp 1
+----
+
+Next two modules to the actual transmitting.
+First one transmits regular data and notifies the next one to do the scrambling.
+Also whenever a 1-bit is transmitted it notifies the scrambler chip of the voltage side: positive or negative.
+
+.Regular Transmission
+[source]
+----
+@ mov 50 p1
+@ slp 7
+loop: mov x1 dat
+teq dat 2
++ mov 0 p1
++ mov 0 x2
++ slp 8
++ jmp loop
+mov dat p1
+teq dat 100
++ mov 1 x2
+teq dat 0
++ mov -1 x2
+slp 1
+----
+
+The scrambler module gets the last 1-bit voltage level information.
+Also waits to start transmitting the scrambled data.
+This data is received from a helper chip and then it’s scaled and offset to output the actual transmission.
+
+.Scrambler
+[source]
+----
+loop: slx x3
+mov x3 acc
+teq acc 0
+- mov acc dat
+- jmp loop
+mov 1 x1
+loop2: mov x1 acc
+teq acc 2
+- mul dat
+- add 50
+- mov acc p1
+- slp 1
+- jmp loop2
+mov 0 p1
+----
+
+The helper chip to scrambler gets the scrambling data from a read-only memory and forwards it.
+
+.Scrambler Helper
+[source]
+----
+sleep: slx x3
+mov x3 acc
+loop: mov x0 acc
+mov acc x3
+teq acc 2
++ mov 0 x1
++ jmp sleep
+slp 1
+jmp loop
+----
+
+It was a fun challenge writing up the scrambling problem and solving it in the game!
+The restricted environment surely leads to some creative solutions.
+
+.Solution
+image::shenzhen-io-b8zs.jpg[Solution]
+
