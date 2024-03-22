@@ -1,0 +1,13 @@
+= Kenan Kartal
+
+Welcome to my personal website!
+I will note down my personal projects, studies and thoughts here.
+
+.Studies
+* OpenGL Demo - link:https://github.com/kenan-kartal/opengl-demo[repo]
+* Vulkan Demo - link:https://github.com/kenan-kartal/vulkan-demo[repo]
+
+.Other
+* link:other/shenzhen-io-endless-runner.html[Shenzhen I/O - Endless Runner]
+* link:other/shenzhen-io-b8zs.html[Shenzhen I/O - B8ZS]
+
