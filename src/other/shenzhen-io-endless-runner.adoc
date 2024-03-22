@@ -1,0 +1,125 @@
+= Shenzhen I/O - Endless Runner
+
+image::shenzhen-io-endless-runner.png[Circuitry]
+
+I have built a tiny endless runner type of game circuit in Shenzhen I/O.
+You basically try and avoid the incoming obstacles as much as you can, with each dodge increasing your point.
+I have published a video of it which can be seen at the bottom of this page.
+Let me share the code and explain how it works.
+
+.Parts used
+* 1 x Custom Screen [LuX Industry LX910C]
+* 1 x 7-segment display [LuX Industry LX700]
+* 1 x Push-Button Controller [N4PB-8000]
+* 1 x Read-Only Memory [200P-14]
+* 2 x Microcontroller [MC4000X]
+* 3 x Microcontroller [MC6000]
+
+The blocks in this game move at particular speed at each time step.
+After they reach the bottom, a new block is generated.
+There are two controllers managing it, one main and one helper.
+
+Main controller spawns a block, moves it and removes it when it’s at the bottom.
+For each spawn it gets the starting point from the read-only memory.
+And it gets the speed of a block from the helper controller.
+Lastly it sends the current block segment value to the collision chip.
+
+.Main Controller
+[source]
+----
+begin: mov x1 acc
+mov x0 dat
+jmp rend
+fall: mul -1
+mov acc x3
+mul -1
+tgt acc 18
+ + jmp begin
+add x0
+rend: mov acc x3
+mov acc x2
+slp 1
+jmp fall
+----
+
+Helper controller checks the score at each time step and if it is 10,
+it switches the game into turbo mode and increases the block speed.
+
+.Helper Controller
+[source]
+----
+mov 3 acc
+loop:
+mov acc x1
+teq x3 10
+ + mov 6 acc
+ + mov 26 x2
+slp 1
+jmp loop
+----
+
+The chip responsible for player controller gets its input from the push-button controller.
+Then it moves the player and clamps its value.
+Then it sends the current player segment value to the collision chip.
+
+.Player Controller
+[source]
+----
+mul -1
+mov acc x1
+mul -1
+mov x3 dat
+teq dat 2
++ sub 1
+teq dat 4
++ add 1
+tlt acc 22
++ mov 22 acc
+tgt acc 24
++ mov 24 acc
+mov acc x2
+slp 1
+----
+
+The collision chip gets the active block and player value from the responsible chips,
+and checks if there is a collision or if the player has avoided the block.
+If the former, it breaks the circuit and ends the game.
+Otherwise it notifies the score chip to add a point.
+
+.Collision
+[source]
+----
+loop: mov x3 acc
+mov acc x1
+sub 3
+mov x2 dat
+teq dat acc
+ + jmp over
+tgt dat 18
+ + mov 1 x0
+ - mov 0 x0
+slp 1
+jmp loop
+over: mov 25 x1
+loop2: slp 999
+jmp loop2
+----
+
+This last chip keeps track of the score and draws it on the 7-segment display.
+It also sends the score value to the helper block falling chip.
+When this chip receives data value of 1 from the collision chip
+which means the player has dodged a block, the score’s incremented by one.
+
+.Score
+[source]
+----
+teq x3 1
++ add 1
+mov acc x2
+mov acc x1
+slp 1
+----
+
+.Video
+video::XSdhh8-aSRI[youtube,width=688,height=288]
+
