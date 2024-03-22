@@ -47,6 +47,9 @@ His solution is very efficient and does not contain redundancies like mine, kudo
 
 == Solution
 
+.Solution
+image::shenzhen-io-b8zs.jpg[Solution]
+
 I have solved this problem with the cost of 27 yuen, 3122 power and 61 lines of code.
 The code is below.
 
@@ -154,7 +157,4 @@ jmp loop
 
 It was a fun challenge writing up the scrambling problem and solving it in the game!
 The restricted environment surely leads to some creative solutions.
-
-.Solution
-image::shenzhen-io-b8zs.jpg[Solution]
 
