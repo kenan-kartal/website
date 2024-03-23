@@ -1,0 +1,259 @@
+= Ray Tracer - Part 1 - The Core
+:toc:
+
+We see lots of projects using ray tracing, such as games, films and animations.
+When they do they look great, especially the reflections and shadows.
+This has resulted in many games suddenly looking as if they are set in Atlantis: ground is always wet.
+However, this does not change the fact that ray tracers enhance the realism of the image rendered.
+So, how does one write a ray tracer?
+
+With this project, I will write a ray tracer and gradually share my progress.
+This project is part of a graduate course called Advanced Ray Tracing,
+offered in the Department of Computer Engineering in Middle East Technical University in Ankara, Turkey.
+Therefore, I will not be able to share any implementation details.
+However, I will share the pseudo-code or at least the description of some algorithms.
+
+== Setup
+
+First of all, I decided on the technologies I will use.
+The bulk of it will consist of {cpp} and CMake.
+In addition, I have to be mindful about the program versions installed in the department’s computer labs.
+So, I cannot make use of {cpp}20, or latest CMake features.
+
+I will mention any third party libraries I use when it is relevant.
+First of which are some support files written by the lecture’s instructor, Prof. Dr. Ahmet Oğuz Akyüz.
+It contains a parser for link:https://paulbourke.net/dataformats/ply/[PLY] as well,
+so large meshes can be used with the scene file format used in METU CENG.
+
+Linear algebra is a very common requirement for many applications including ray tracing.
+It constitutes one of the core building blocks of any graphics program.
+There are very well written libraries.
+However, we are required to write this ourselves too.
+So, I have written a small library to cover this.
+For simplicity I have defined a vector type with fixed dimension size of three and member type of float.
+Later, this could be improved with template dimension size and data type as well.
+
+== Components
+
+There are five main components in ray tracing:
+
+1. Camera
+2. Image Plane
+3. Lights
+4. Objects
+5. Rays
+
+.Camera
+Camera is simply a position and orientation.
+We use this point in space to generate our rays at.
+
+.Image Plane
+Image plane is a surface used to render the final image at.
+It is represented by its shape, resolution and transformation with respect to the camera.
+This plane determines how many initial rays are cast and what their directions are.
+The image plane can have different shapes but we will be using a simple rectangle that’s centered at camera’s gaze direction.
+Other forms like curved rectangles or even lens-like shapes can be used to create different effects.
+
+.Lights
+Lights are used to illuminate the scene.
+They and objects together can produce shadows.
+There are different kinds of light sources like ambient, directional or point.
+
+.Objects
+Objects consist of mathematically defined geometrical shapes like spheres, cubes or triangles.
+They can also be a collection of these primitives, formed most commonly with triangles or quadrilaterals.
+Objects also have materials that affect how they are rendered.
+
+.Rays
+Finally, a ray is a 3D parametric line with half-open interval, usually [0, ∞).
+It can be represented as:
+....
+r(t) = o + td
+r: function calculating a point on the ray
+o: origin vector
+d: direction vector
+With the parameter t >= 0, any point on this ray can be represented.
+....
+In reality light rays are sums of light waves.
+However, we represent it as a line for practicality.
+It is enough to cover most use cases.
+
+== Algorithm
+
+[source]
+----
+for each pixel do:
+  compute viewing (eye, primary) rays
+  find the first object hit by ray and its surface normal n
+  set pixel color to value computed from hit point, light, and n
+----
+
+For each pixel of the image we will render, we need to begin with a ray.
+For this we will originate our rays at the camera and calculate the direction of the ray
+by calculating the position of the pixel on the image plane.
+
+We can mathematically define geometric primitives in their implicit forms.
+This will allow us to test if a certain point is on the surface or not.
+If we substitute this point in the equation with the ray definition,
+then we will get the parameter t, assuming there is an intersection point.
+The implicit form does not practically work for triangles,
+so we will be using its parametric form with barycentric coordinates instead.
+
+[cols="1,1,2"]
+|===
+|Object |Implicit Form |Notes
+
+|Plane
+|(p-a)*n = 0
+|a: point on plane, n: normal
+
+|Sphere
+|(p-c)^2^-r^2^=0
+|c: center, r: radius
+
+|Triangle
+|-
+|Using barycentric coordinates instead.
+|===
+
+All this work needs to be complemented with rendering.
+For testing, we can shade our scenes in a very simple manner with flat shading.
+Look at this beauty!
+
+.Science Tree (Flat Shaded)
+image::science-tree-flat.png[Science Tree Flat]
+
+In reality lights are combinations of different wavelengths and their energy.
+They have power distributions over the spectral domain and objects have reflectance distributions.
+There are some spectral ray tracers like Indigo Renderer and LuxCoreRender.
+However, instead of spectral ray tracing we can use the RGB model for easier simulation.
+It is a good amount of simplification with a small trade-off on the output.
+I have used the RGB model in this project.
+
+How much a light reflects from a surface is mathematically modelled simultaneously by David Immel et al. and James Kajiya in 1986.
+For any point on a surface, we integrate the incoming irradiance over the entire hemisphere surrounding that point to calculate the outgoing radiance.
+But this model is too costly to evaluate.
+A good simplification is to ignore all directions apart from the light sources, and then include an ambient term to simulate lost irradiance.
+
+=== Shading Models
+
+In order to simulate the rendering equation, we will use three shading models and combine them:
+
+1. Diffuse Shading
+2. Specular Shading
+3. Ambient Shading
+
+Diffuse shading simulates the incoming irradiance projected over a surface.
+Meaning that more the angle between the surface normal and direction of the light, less light it’ll receive.
+And we assume that this received irradiance will be reflected evenly for all directions at a point.
+So, the colour will be same from all viewing angles.
+After applying this we can see a huge improvement in our renders.
+The Science Tree scene took 30.5s with diffuse shading, with only 0.1s of increase!
+
+.Science Tree (Diffuse Shaded)
+image::science-tree-diffuse.png[Science Tree Diffuse]
+
+Ambient shading is a very simple approximation of the scattered light.
+However, it works quite well for quite cheap.
+To calculate it we take the ambient light of the scene and for each point on a surface
+we multiply it with the object’s ambient reflectance.
+
+Some of the light is not reflected uniformly and its perception changes from different views.
+To simulate this we will use specular shading.
+This shading is view-dependent and it is more apparent for shiny surfaces.
+I have used Blinn-Phong model for this.
+
+=== Shadows
+
+While calculating the received irradiance we need to actually check how much of it is actually reaching the point.
+We have been using two kinds of lights: ambient and point.
+So shadow calculations for these are pretty straightforward.
+Ambient light does not produce any shadow at all.
+After all, we have put it there to simulate the scattered light lost in our simplified model.
+For point lights, we assumed them to be originating from an infinitesimally small source, a point.
+So a single shadow ray to check if the light is visible from the point will be sufficient.
+
+While calculating shadow ray intersections, if we originate the ray from the actual point,
+our calculations may pick up the surface that the point is on as an intersection as well.
+Thus, creating black spots (or acne) on some seemingly random points.
+This, of course, depends on the implementation and floating point precision.
+But it is safer to offset the origin point with a small amount.
+
+=== Recursion
+
+So far, the irradiance any point receives comes directly from light sources.
+We have added ambient shading for scattered light but it is not enough.
+Lights get reflected all the time and we can trace it from the camera’s point of view.
+After calculating the previous shadings, we can bounce the view ray off of the point
+and calculate some more reflected light that point receives.
+This is called path tracing, and it’s expensive.
+So, we will apply this to mirror and transmitter type objects only for now.
+Also, we need to define a maximum depth to avoid infinite recursions.
+
+How an object is shaded depends on its material. In this project there are four types of materials defined:
+
+1. Default
+2. Mirror
+3. Dielectric
+4. Conductor
+
+So far, all material have been of type default. Rest of the materials will have some more shading added based on light reflection and refraction.
+
+.Mirror
+Mirrors reflect light, so in order to shade them we add a reflection shading in addition to previous shadings.
+In order to calculate the incoming light reflected to camera’s way,
+we begin with the view ray as we have done for previous shadings.
+The key point is that the acute angle between the view ray and surface normal is
+the same with the reflection ray and surface normal.
+After calculating the reflection ray, we cast it into the scene and get it’s colour.
+Mirror spheres scene cost has increased from 147ms to 200ms with the mirror material.
+Recursion depth was 6.
+
+.Mirror Spheres
+image::spheres-mirror.png[Mirror Spheres]
+
+.Dielectric
+Dielectric objects are transparent to some degree.
+They both reflect and refract light.
+The direction of the reflected and refracted lights must be calculated.
+Also their energy percentages must be known as well as the energy lost inside the material.
+We follow Snell's Law to find the refracted direction.
+Energy percentage can be found by the polarization of the light,
+using the power coefficients in fresnel equations.
+Lastly, attenuation inside a medium is governed by Beer's Law.
+The Science Tree scene cost has increased from 70s to 109s with the dielectric material.
+Recursion depth was 6.
+
+.Science Tree (Glass)
+image::science-tree-glass.png[Science Tree Glass]
+
+.Conductor
+Conductor objects absorb some of the incoming light and reflect them.
+On top of the previous shadings, we will add this reflectance for conductor types as well.
+In order to simulate absorption, conductor materials will have absorption index that we can use similar to dielectric power split equations.
+However, for conductors we will not throw refraction rays, but use absorption instead.
+Also mirror coefficient to simulate nonuniform absorption on different channels will be handy.
+Adding a conductor material has increased the time cost of the recursive Cornell Box scene from 450ms to 454ms.
+Recursion depth was 6.
+
+.Cornell Box and recursive materials
+image::cornellbox-recursive.png[Recursive Cornell Box]
+
+== Performance
+
+Finally we can ship this miraculous ray tracer and become rich!
+We just need to find customers that will wait 75 minutes to render a 200x120 image.
+Yes, it took 75m to render a Golden Dragon scene with low resolution.
+It has around 1.8M tris and recursion depth was 6.
+
+.Golden Dragon (Low Resolution)
+image::golden-dragon-low-res.png[Golden Dragon (Low Resolution)]
+
+In order to increase the performance I have tried back-face culling and caching normals in the bunny scene.
+It has a single mesh with only 5K tris.
+By default the bunny scene took 24.6s.
+When I have enabled back-face culling, the time cost has increased to 27.3s.
+Using caching normals method instead has slightly dropped the cost to 23.6s.
+Although a single scene render times are not conclusive,
+these methods will not be very effective compared to other acceleration structures.
+
