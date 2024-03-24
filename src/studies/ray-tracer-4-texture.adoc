@@ -1,0 +1,82 @@
+= Ray Tracer - Part 4 - Texture Mapping
+:toc:
+
+The materials we simulated so far has uniform textures.
+They behave the same for each point on the object.
+However, this is not the case in reality.
+We see different characteristics for different points such as its colour, brightness or bumps.
+In order to simulate the variation of points on the texture, we need to get the information from somewhere.
+We can procedurally generate it or we can use captured data in images.
+
+== Mapping
+
+Image sizes can be different as it’s the case with object sizes.
+So we need a system independent of the image or object size.
+The solution is to introduce a new coordinate system for textures that’s called uv coordinates.
+For spheres we can use the spherical coordinates for a one-to-one and onto mapping, except the polar points.
+That depends on the implementation and with IEEE floating-point representation, we don’t need to check for these edge cases.
+It is different for triangles.
+We do not know which part of the texture the triangle maps to, so each vertex must have its own uv coordinate.
+We can use the barycentric coordinates to interpolate the uv coordinate of a point on the triangle.
+
+If you remember from part 3, we can reconstruct the sampled data in different ways.
+In this case, we find a point on the image and we need to get the value from that point.
+For simplicity we will have two options: Nearest neighbour and bilinear interpolation
+The nearest neighbour filtering is very simple.
+We get the texel nearest to the uv coordinate and get its value.
+This can be useful for creating pixelated effects.
+The bilinear interpolation method takes the four closest texels, and linearly interpolates between their values.
+This creates a smoother transition but it’s slower than the nearest neighbour method.
+
+== Texture Types
+
+.Diffuse
+The most straightforward variation we can apply with textures is to the surface colour.
+So we sample the image for a point with its texture coordinates,
+and then use the sampled value for the material’s diffuse coefficient.
+
+.Specular
+A surface typically does not have the same brightness on all points.
+We can use a texture for it just like we have done for the diffuse shading.
+The sampled value will replace the specular coefficient.
+
+.Displacement
+Displacement maps are used to modify the geometry of the models by a displacement function.
+Since it’s acting on the actual geometry, it generates true bumps.
+It can result in self-shadows and a very fine grained look at the cost of increased geometry.
+There are some good applications of it, like tessellated terrains that generate higher detailed geometry when the camera is close.
+However, I will not implement this in this project.
+
+.Normal
+Without increasing the geometric details, we can apply fake bumps to a mesh with normal maps.
+The actual geometry is not changed at all, however the surface normal is sampled from an image.
+This mapping creates nice details for a small cost.
+So, it’s widely used.
+We need to encode this data on the image.
+We can use the model’s tangent space for that, and each three channel will represent the three axes in that space.
+We can then get this normal we sampled and transform it into the world space.
+Finally, we can use this normal instead of the surface normal.
+
+.Bump
+Instead of providing new normals with a texture,
+in bump mapping we dictate how much a point should expand or contract from its original position.
+This does not change the geometry of the mesh,
+but we compute a new normal from the expanded or contracted surface.
+
+.Earth (Diffuse & Bump Mapped)
+image::earth.png[Earth with diffuse and bump mapping.]
+
+.Space Ship (Diffuse, Normal & Specular Mapped)
+image::spaceship.png[Spaceship with diffuse, normal and specular mapping.]
+
+== Smooth Shading
+
+Apart from textures to sample surface normals, we can also use the geometry to smooth the rendered image.
+If we assign a normal to each vertex, we can use that in a triangle to interpolate the normal of a point.
+Vertex normal can be generated with respect to the faces it’s a part of by taking the average of the face normals.
+In my implementation each face has the same weight.
+However, another option might be taking the magnitude of the areas into consideration.
+
+.Kangaroo (Smooth shaded)
+image::kangaroo-smooth.png[Smooth shaded kangaroo.]
+
