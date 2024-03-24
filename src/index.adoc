@@ -6,6 +6,7 @@ I will note down my personal projects, studies and thoughts here.
 .Studies
 * OpenGL Demo - link:https://github.com/kenan-kartal/opengl-demo[repo]
 * Vulkan Demo - link:https://github.com/kenan-kartal/vulkan-demo[repo]
+* link:studies/ray-tracer-2-acceleration.html[Ray Tracer - Part 2 - Acceleration Structures]
 * link:studies/ray-tracer-1-core.html[Ray Tracer - Part 1 - The Core]
 
 .Other

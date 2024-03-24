@@ -1,0 +1,119 @@
+= Ray Tracer - Part 2 - Acceleration Structures
+:toc:
+
+In this part I will speed up rendering times by introducing an acceleration structure.
+
+
+Currently we can render a 200×120 resolution image with 1.8 million triangles in about 75 minutes.
+This is much less than ideal, it should be much faster.
+The problem is that there are so many unnecessary calculations.
+It is checking every primitive for each ray.
+
+== Space Subdivision
+
+One way to stop unnecessary tests is structuring the objects into a kind of hierarchy to determine possible intersections.
+These structures basically check if there is a possible intersection with the contained primitive or not.
+Checks begin at the top level and goes deeper if it succeeds.
+There are two kinds of space subdivisions:
+
+1. Spatial subdivision
+	a. Grid
+	b. Octree
+	c. kd-tree
+2. Object subdivision
+	a. Bounding Volume Hierarchy
+
+.Grid
+Grid divides the space into equally sized voxels. A grid element may contain zero or more (possible partial) primitives.
+It does not scale well with complex and non-uniformly distributed scenes.
+Because if there are too many voxels then it’s too much overhead,
+or if there too few then the ones that contain complex geometry will suffer greatly.
+
+.Octree
+Each node in an octree divides the space into eight nodes.
+Then these nodes can divide their own subspace.
+It can continue until each node contains some number of objects or it reaches a certain depth.
+It’s a bit better than grid because a node can stop deepening early.
+
+.KD-Tree
+Kd-tree is a binary tree where the space is recursively divided into two by axis-aligned hyperplanes.
+Unline octree, it can work with any number of dimensions.
+But for 3D scenes only it is not a big advantage.
+Planes can be chosen alternatively for each dimension and they can be non-uniform.
+If median element is chosen for each division, it’ll be a balanced tree.
+When a ray intersects with an object inside a node,
+the intersection must be inside that subspace to be accepted.
+Otherwise, there might be a closer intersection on the next node.
+
+.Bounding Volume Hierarchy
+Unlike the previous structures, bounding volume hierarchy (BVH) does not partition space into disjointed regions,
+but objects into disjointed polygons.
+So, the sub-spaces of a BVH may overlap but each subspace will contain primitives entirely, not partially.
+Since BVHs may have overlapping sub-regions, in order to determine the closest hit in a node,
+we have to check all child nodes.
+
+=== Implementation
+
+oth kd-tree and BVH has their advantages.
+They are both adaptive to the scene.
+Kd-tree partitions the space into disjointed volumes, so if the closest intersection is inside the volume of a node, the search is done.
+But an object may be referenced by multiple nodes.
+For a BVH each object is referenced exactly once per leaf node.
+But the space of them can overlap.
+BVH performs better in simple and moderately complex scenes.
+Whereas, kd-tree is more performant for more complex scenes (Vinkler et. al., 2014).
+Since the scenes we use in CENG 795 are not very complex and this is easier to implement, I have decided to use BVH.
+
+In order to implement any of the structures mentioned above,
+we need to actually implement a bounding box that will intersect with the rays.
+A box consists of three pairs of planes.
+For performance, the planes can be axis aligned only so the calculations will be faster.
+
+I have rendered the Golden Dragon scene from before in a larger resolution (800x480),
+which took only 7.8s.
+It is over 500K% performance gain compared to the previous low resolution render.
+The scene has 1.8M tris and recursion depth was 6.
+
+.Golden Dragon
+image::golden-dragon.png[Golden Dragon]
+
+== New Features
+
+Now that we have a decently fast ray tracer, we can focus on adding some new features.
+
+.Transformations
+Transformations can be used to map model space into world space.
+If you are familiar with a 3D software, you probably moved a mesh from one place to another.
+That does not change the vertex data of the model, but its world space is different.
+Transformations consist of translations, rotations and scalings.
+Also they can form composites together.
+In this project we have used transformation matrices which is an application of homogeneous coordinates.
+One key note, normals after applying transformations may be skewed or not normalized.
+To solve this, we can apply the inverse transpose of the transform and normalize the vector afterwards.
+Also normals should not be affected by translations, so their homogeneous coordinate value should be 0 instead of 1.
+Previously, the vertex data has been the same for both model space and world space.
+Now that we have added transformations, we need to be careful about ray intersections.
+Instead of modifying the primitives to get their world space positions,
+we can transform ray itself to bring it to the model space.
+We can achieve this by applying the inverse of the model transform.
+
+.Instancing
+In a scene we might want to reuse a model as many other programs do with instancing.
+We could duplicate the mesh data for each new object we want to create, but it would consume too much memory.
+Instead, these new instances can refer to a base mesh data and apply their own transformations.
+We can set these instances to have their own materials too.
+
+.Multi-threading
+Finally we can make this program a little more faster with multi-threading.
+I have divided the image into 16 parts and assigned each part to a rendering thread.
+“Marching Dragons” took 108 seconds in my system in a single thread.
+Its resolution is 1920×1080, and the base mesh has 870K triangles.
+With multi-threading the total time is down to 17 seconds.
+It is nice to render good looking images without waiting for hours!
+
+.Marching Dragons
+image::marching-dragons.png[Marching Dragons]
+
+.Two Dragons
+image::two-dragons.png[Two Dragons]
+
