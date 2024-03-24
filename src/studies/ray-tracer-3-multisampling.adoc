@@ -1,0 +1,150 @@
+= Ray Tracer - Part 3 - Multisampling
+:toc:
+
+Instead of tracing a single ray per pixel, we can do multiple and sample them.
+This will help mitigate issues like aliasing and introduce new features.
+
+== Sampling and Filtering
+
+Lights are continuous in the real world and we use cameras to capture them.
+They work by projecting this continuous information onto an area,
+on which there are finite number of sensors or a film with finite cycles per millimetre.
+Then, the received information is sampled at each point.
+This sampling process maps the continuous information to a discrete range.
+And this mapping will lose information, sometimes lots of it depending on the sampling.
+
+Reconstructing a signal from samples is called filtering.
+Reconstructed signals may greatly differ from the original.
+This is called aliasing and both sampling and filtering can cause it.
+
+A signal in the spatial space can be also represented in the frequency space.
+The corresponding function in the frequency space can be found with the Fourier transform,
+and vice versa with the inverse.
+This transform is one-to-one, so no information will be lost and the exact function can be retrieved.
+The sampling process can be represented mathematically by the multiplication of the
+signal function and the Dirac comb, assuming that we sample periodically.
+One of the properties of the Fourier transform is that;
+the signal multiplied with a function in the spatial domain corresponds to its frequency function
+convoluted by the that function’s frequency representation.
+It means that when a function is multiplied with Dirac comb (sampled),
+its frequency representation will repeat periodically.
+While reconstructing the signal, we can select the central copy in the frequency domain with a box function,
+which corresponds to convolution with sinc in the spatial domain.
+
+If the sampling rate is low, then the copies in the frequency domain will overlap and result in aliasing.
+The reason for it is that the Dirac comb’s period is inversely related to the period of its frequency domain representation.
+To prevent it we simply increase the sampling rate and reduce the period of the Dirac comb.
+The sampling rate must be at least the twice of the signal frequency in order to perfectly reconstruct it,
+and this rate is called the Nyquist rate.
+It works very well for band-limited signals, but the light signals we deal with are not necessarily band-limited.
+Also, we do not know the frequency of the captured scene.
+We only learn about it by sampling it, which is the thing we want to improve.
+
+=== Types of Sampling
+
+.Uniform
+We can divide the pixel into regularly spaced intervals.
+This is basically equivalent to increasing the image resolution.
+There will still be aliasing but it won’t be as hard as before, because we will have more information per pixel.
+
+.Random
+The number of sampling points in a pixel might be the same as the uniform sampling,
+but their locations will be totally random.
+This will reduce aliasing but it may introduce outliers where samples are very close together.
+
+.Stratified Random
+Also known as jittered sampling, it is is a mix of uniform and random sampling.
+We divide the pixel into grids and each grid will contain a randomly positioned sampling point.
+This will reduce both aliasing and noise.
+This can create outliers as well, possibly with the neighbouring pixels.
+We can avoid it with techniques like random rejection sampling or
+Bridson’s (2007) “Fast Poisson Disk Sampling in Arbitrary Dimensions”.
+I have used stratified random sampling.
+
+=== Types of Filtering
+
+.Box
+Box filtering is convoluting the sample function with a box function.
+For our case this can be achieved by simply taking the average colour of the samples.
+This corresponds to a sinc function in the frequency domain, so it’s very likely to result in aliasing.
+
+.Gaussian
+Gaussian filter gives more weight to central values of the function it’s convoluted with,
+so neighbouring samples will have less effect on the final image.
+I have used this one.
+
+== Distributed Ray Tracing
+
+So far, we have traced rays perfectly in reflections and refractions, using assumptions.
+Distributed ray tracing helps to mitigate the negative effects of these simplifications
+by sampling rays in more than one direction or at more than one time instance (Cook et al., 1984).
+It can be used to render soft shadows, depth of field and motion blur.
+Since we have introduced multisampling,
+we can use this extra information to apply some distributed ray tracing techniques.
+
+=== Depth of Field
+
+Our render model is currently sampling points perfectly, as if it’s captured by a perfect pinhole camera.
+However, in reality apertures are not infinitesimally small.
+To overcome this problem lenses are used.
+This does a pretty good job focusing the objects at a certain distance from the camera.
+The trade-off is that things will begin looking more blurry, the further it is from that perfect distance, called the focal plane.
+To simulate this for a pixel, we select a random position on the lens and calculate the refracted ray that’ll pass through that point.
+The ray we usually calculate and this new refracted ray will intersect at camera’s focal plane.
+So, the samples will be exactly the same if the point is on that plane.
+I have implemented the lens as a square.
+The size and the focus distances are given in the scene file.
+
+.Spheres (Depth of Field)
+image::spheres-dof.png[Spheres showcasing depth of field.]
+
+=== Soft Shadows
+
+The shadows have been too crisp in the renders, because we only used point lights and an ambient light.
+We can implement soft shadows if we add area lights to the scenes.
+
+We can define a simple square light as an area light
+that has no intersectable geometry itself.
+It only provides illumination.
+Using the distributed ray tracing technique, we can sample random points on this light by casting shadow rays to them.
+Then, we will again filter these samples to calculate the radiance received from this light.
+We assume that area lights are ideal diffuse, that is, it’s emitting the same amount of radiance in all of its points and towards all possible directions.
+
+.Cornell Box with Area Light
+image::cornellbox-area-light.png[Cornell Box with two spheres, one mirror one plastic and an area light on top.]
+
+=== Motion Blur
+
+In distributed ray tracing, we can distribute the rays in the time domain as well.
+With that we can create a motion blur effect.
+Motion blur occurs in real cameras, because light continuously go through the lens until the camera’s shutter closes.
+The time and therefore how much exposure the image gets depend on the shutter speed.
+If an object is too fast, more samples may contain the same light information, thus, creating a motion blur.
+We can implement it by getting a random time value in each sample, and ray trace with the updated transformations.
+Importantly, the time value should be the same for all the rays recurring from the primary ray: shadow rays, reflections & refractions.
+For this project, we implement it with a single translational velocity per object maximum and for unit time.
+Same with lenses and area lights, we can sample time stratified and assign one to each sample.
+
+.Cornell Box (Motion Blur)
+image::cornellbox-dynamic.png[Cornell Box showcasing motion blur with a moving box and its reflection.]
+
+=== Roughness
+
+A surface does not reflect or refract light equally from all of its points, like brushed metal.
+Some points reflect and refract closer to the ideal direction while others are way off.
+We can parametrise how much this difference may be and call it roughness.
+Then, we can use the stratified random values assigned to the sample and deviate the recurring ray’s direction according to roughness.
+
+.Rough Glass and Metal
+image::rough-glass-metal.png[Sphere behind a rough glass and next to a rough metal sheet.]
+
+== Performance
+
+We have begun by sampling more than once for a pixel to mitigate the aliasing problem.
+This, naturally, increased the waiting times since we are tracing more rays per pixel.
+However, we have gotten more than anti-aliasing with this trade.
+So, I think the increased waiting times worth the gained effects.
+
+.Two Dragons (Motion Blur)
+image::two-dragons-dynamic.png[Two dragon figurines, one is metal with motion blur, other is green glass.]
+
