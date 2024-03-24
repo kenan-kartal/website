@@ -1,0 +1,78 @@
+= Ray Tracer - Part 5 - Tone Mapping
+:toc:
+
+So far the dynamic range in the scenes has been low and colour channels are clamped to 8-bit range.
+This creates problems for values close to borders.
+Small values are practically black, and values higher than the range we use,
+the information is lost and the value is clamped.
+We can fix this by issue with tone mapping.
+
+= Tone Mapping
+
+Instead of clamping the values, we could determine the dynamic range of the image and linearly scale it to fit the 8-bit range.
+However, this usually darkens or brightens the image too much because the human eye does not perceive brightness of the pixels linearly.
+
+The human visual system is quite adaptable to different environments.
+But this ability depends on the environment too.
+The Weber’s Law states that the minimum incremental amount of light we can distinguish from the background depends on the background intensity.
+Several factors take role for this adaptation.
+The pupil dilates or constricts to change the amount of light the retina receives.
+The retina has two types of photoreceptors: rod and cones.
+These photoreceptors are sensitive to different ranges of light.
+Also, they receive light with chemical reactions of pigments which need to be regenerated.
+So, this is creating a brief period in which the photoreceptor is not sensitive.
+
+Tone mapping operators (TMO) work to simulate the visual adaptation of the human visual system.
+There are different TMOs that operate globally or locally, on spatial domain or on frequency domain.
+One of them is the photographic TMO (Reinhard et al., 2002).
+This method extends the techniques of Ansel Adams, primarily the Zone System.
+The Zone System has print zones which double in reflectance at each step.
+The subjective middle brightness maps to the middle zone on this scale.
+This is achieved by parametrising the overall subjective brightness of the scene which is called key.
+Aside from operating globally with the key, we can also apply dodging and burning by operating on a local scale.
+
+During tone mapping we need to apply gamma correction to correctly display the rendered image.
+Or they might appear too dark or too bright.
+This operation relies on calculating the pixel luminance same with other tone mapping operations,
+which brings the scene to sRGB space.
+Since we have not transformed colour spaces before and implicitly assumed that they are all in sRGB space,
+we need to transform them into linear sRGB space to correctly tone map the scene.
+
+.Cube (No tone mapping)
+image::cube-ldr.png[Cube without tone mapping.]
+
+.Cube (With tone mapping)
+image::cube-hdr.png[Cube with tone mapping.]
+
+== More Light Types
+
+.Directional
+Directional lights are pretty straightforward.
+They simulate light sources that are very far away like the sun.
+It has a single direction and a constant radiance for each point, assuming of course that point is not in shadow.
+
+.Spot
+Spot lights send light in a cone and the radiance is not uniform inside this volume.
+We can simulate this by defining two angles: fall-off and coverage.
+The coverage angle determines the area being illuminated.
+The fall-off angle specifies the inner cone which contains the highest focused radiance.
+The energy of the light falls off based on how much it’s away from the inner cone.
+Also, the light attenuates with distance just like point lights.
+
+.Environment Light
+Instead of a single background colour, we can drop an HDR image in a
+latitude-longitude format to the background in order to simulate environment lights.
+In order to calculate received irradiance from this light at a point, we can sample the image similar to area lights.
+We can sample a direction from uniformly distributed points on a sphere.
+Similar to area lights, sampled direction should be carried along while path tracing.
+This can help creating very nice renders.
+
+.Directional light
+image::cube-directional.png[Cube under directional light.]
+
+.Spot light
+image::cube-spot.png[Cube under spot light.]
+
+.Environment light
+image::mirror-sphere-env.png[Floating mirror sphere inside a church.]
+

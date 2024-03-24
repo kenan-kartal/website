@@ -6,6 +6,7 @@ I will note down my personal projects, studies and thoughts here.
 .Studies
 * OpenGL Demo - link:https://github.com/kenan-kartal/opengl-demo[repo]
 * Vulkan Demo - link:https://github.com/kenan-kartal/vulkan-demo[repo]
+* link:studies/ray-tracer-5-tone.html[Ray Tracer - Part 5 - Tone Mapping]
 * link:studies/ray-tracer-4-texture.html[Ray Tracer - Part 4 - Texture Mapping]
 * link:studies/ray-tracer-3-multisampling.html[Ray Tracer - Part 3 - Multisampling]
 * link:studies/ray-tracer-2-acceleration.html[Ray Tracer - Part 2 - Acceleration Structures]
