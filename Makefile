@@ -11,3 +11,6 @@ all:
 	find $(build_path) -type d -exec chmod 0755 {} \;
 	find $(build_path) -type f -exec chmod 0644 {} \;
 
+publish:
+	rclone -v copy $(build_path)/ website:/public_html/
+
