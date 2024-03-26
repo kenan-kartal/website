@@ -3,12 +3,14 @@
 Welcome to my personal website!
 I will note down my personal projects, studies and thoughts here.
 
-.Studies
-* OpenGL Demo - link:https://github.com/kenan-kartal/opengl-demo[repo]
-* Vulkan Demo - link:https://github.com/kenan-kartal/vulkan-demo[repo]
-* link:studies/ray-tracer.html[Ray Tracer]
+== Studies
 
-.Other
-* link:other/shenzhen-io-b8zs.html[Shenzhen I/O - B8ZS]
-* link:other/shenzhen-io-endless-runner.html[Shenzhen I/O - Endless Runner]
+OpenGL Demo:: Forward & deferred rendering demo in OpenGL. link:https://github.com/kenan-kartal/opengl-demo[Repo].
+Vulkan Demo:: Demo for precise GPU programming in Vulkan. link:https://github.com/kenan-kartal/vulkan-demo[Repo].
+Ray Tracer:: METU graduate course study of advanced ray tracing techniques. link:studies/ray-tracer.html[Index].
+
+== Other
+
+Shenzhen I/O - B8ZS:: A custom puzzle in Shenzhen I/O to implement a bipolar with eight zero substitution scrambler. link:other/shenzhen-io-b8zs.html[Post].
+Shenzhen I/O - Endless Runner:: An endless runner game implemented in Shenzhen I/O. link:other/shenzhen-io-endless-runner.html[Post].
 
