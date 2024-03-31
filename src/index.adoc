@@ -11,6 +11,8 @@ Ray Tracer:: METU graduate course study of advanced ray tracing techniques. link
 
 == Other
 
+AT&T Ray Seyfarth's Assembly:: AT&T syntax implementation of Ray Seyfarfath's _Introduction to 64 Bit Intel Assembly Language Programming for Linux_ (2011).
+	link:https://github.com/kenan-kartal/att-ray-seyfarth[Repo].
 Shenzhen I/O - B8ZS:: A custom puzzle in Shenzhen I/O to implement a bipolar with eight zero substitution scrambler. link:other/shenzhen-io-b8zs.html[Post].
 Shenzhen I/O - Endless Runner:: An endless runner game implemented in Shenzhen I/O. link:other/shenzhen-io-endless-runner.html[Post].
 
