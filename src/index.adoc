@@ -4,6 +4,8 @@ Welcome to my personal website!
 
 I will note down my personal projects, studies and thoughts here.
 
+You can send me a message at mailto:contact@kenankartal.name[]
+
 == Studies
 
 OpenGL Demo (2023):: Forward & deferred rendering demo in OpenGL. link:https://github.com/kenan-kartal/opengl-demo[Repo].
