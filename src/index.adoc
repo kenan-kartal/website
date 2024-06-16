@@ -8,14 +8,18 @@ You can send me a message at mailto:contact@kenankartal.name[]
 
 == Studies
 
-Ray Tracer (2022):: METU graduate course study of advanced ray tracing techniques. link:studies/ray-tracer.html[Index].
+=== 2022
+Ray Tracer:: METU graduate course study of advanced ray tracing techniques. link:studies/ray-tracer.html[Index].
 
 == Other
 
-PGU-64 (2024):: 64-bit implementation of Jonathan Bartlett's _"Programming from the Ground Up"_ (2003).
+=== 2024
+PGU-64:: 64-bit implementation of Jonathan Bartlett's _"Programming from the Ground Up"_ (2003).
 	link:https://github.com/kenan-kartal/pgu-64[Repo]
-AT&T Ray Seyfarth's Assembly (2024):: AT&T syntax implementation of Ray Seyfarfath's _Introduction to 64 Bit Intel Assembly Language Programming for Linux_ (2011).
+AT&T Ray Seyfarth's Assembly:: AT&T syntax implementation of Ray Seyfarfath's _Introduction to 64 Bit Intel Assembly Language Programming for Linux_ (2011).
 	link:https://github.com/kenan-kartal/att-ray-seyfarth[Repo].
-Shenzhen I/O - B8ZS (2023):: A custom puzzle in Shenzhen I/O to implement a bipolar with eight zero substitution scrambler. link:other/shenzhen-io-b8zs.html[Post].
-Shenzhen I/O - Endless Runner (2023):: An endless runner game implemented in Shenzhen I/O. link:other/shenzhen-io-endless-runner.html[Post].
+
+=== 2023
+Shenzhen I/O - B8ZS:: A custom puzzle in Shenzhen I/O to implement a bipolar with eight zero substitution scrambler. link:other/shenzhen-io-b8zs.html[Post].
+Shenzhen I/O - Endless Runner:: An endless runner game implemented in Shenzhen I/O. link:other/shenzhen-io-endless-runner.html[Post].
 
