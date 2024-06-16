@@ -8,8 +8,6 @@ You can send me a message at mailto:contact@kenankartal.name[]
 
 == Studies
 
-OpenGL Demo (2023):: Forward & deferred rendering demo in OpenGL. link:https://github.com/kenan-kartal/opengl-demo[Repo].
-Vulkan Demo (2023):: Demo for precise GPU programming in Vulkan. link:https://github.com/kenan-kartal/vulkan-demo[Repo].
 Ray Tracer (2022):: METU graduate course study of advanced ray tracing techniques. link:studies/ray-tracer.html[Index].
 
 == Other
